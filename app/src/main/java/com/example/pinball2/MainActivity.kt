@@ -9,7 +9,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -17,7 +17,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(PinballView(this))
