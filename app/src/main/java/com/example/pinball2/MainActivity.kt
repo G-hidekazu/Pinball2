@@ -16,6 +16,7 @@ import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,11 +65,25 @@ private class PinballView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas.drawRect(boardRect, boardPaint)
+        drawBoard(canvas)
         drawPlunger(canvas)
         drawPaddle(canvas, leftPaddle)
         drawPaddle(canvas, rightPaddle)
         canvas.drawCircle(ball.x, ball.y, ball.radius, ballPaint)
+    }
+
+    private fun drawBoard(canvas: Canvas) {
+        val arcRadius = boardRect.width() / 2f
+        val arcRect = RectF(
+            boardRect.centerX() - arcRadius,
+            boardRect.top,
+            boardRect.centerX() + arcRadius,
+            boardRect.top + arcRadius * 2f
+        )
+        canvas.drawArc(arcRect, 180f, 180f, false, boardPaint)
+        canvas.drawLine(boardRect.left, boardRect.top + arcRadius, boardRect.left, boardRect.bottom, boardPaint)
+        canvas.drawLine(boardRect.right, boardRect.top + arcRadius, boardRect.right, boardRect.bottom, boardPaint)
+        canvas.drawLine(boardRect.left, boardRect.bottom, boardRect.right, boardRect.bottom, boardPaint)
     }
 
     private fun drawPlunger(canvas: Canvas) {
@@ -139,7 +154,7 @@ private class PinballView(context: Context) : View(context) {
         val laneCenterX = laneLeft + laneWidth / 2f
         if (ball.x > laneLeft && ball.y > boardRect.bottom - boardRect.height() * 0.22f) {
             ball.x = laneCenterX
-            ball.vy -= plungerPull * 10f
+            ball.vy -= plungerPull * 18f
             ball.vx += (Math.random().toFloat() - 0.5f) * 150f
         }
     }
@@ -200,13 +215,31 @@ private class PinballView(context: Context) : View(context) {
             ball.x = boardRect.right - ball.radius
             ball.vx = -abs(ball.vx)
         }
-        if (ball.y - ball.radius < boardRect.top) {
-            ball.y = boardRect.top + ball.radius
-            ball.vy = abs(ball.vy)
-        }
+        resolveTopArcCollision()
         if (ball.y + ball.radius > boardRect.bottom) {
             ball.y = boardRect.bottom - ball.radius
             ball.vy = -abs(ball.vy)
+        }
+    }
+
+    private fun resolveTopArcCollision() {
+        val arcRadius = boardRect.width() / 2f
+        val centerX = boardRect.centerX()
+        val centerY = boardRect.top + arcRadius
+        val dx = ball.x - centerX
+        if (abs(dx) > arcRadius) return
+        val boundaryY = centerY - sqrt((arcRadius * arcRadius - dx * dx).toDouble()).toFloat()
+        if (ball.y - ball.radius < boundaryY) {
+            val dist = hypot(ball.x - centerX, ball.y - centerY)
+            val nx = (ball.x - centerX) / max(dist, 0.001f)
+            val ny = (ball.y - centerY) / max(dist, 0.001f)
+            val relativeSpeed = ball.vx * nx + ball.vy * ny
+            if (relativeSpeed < 0f) {
+                val bounce = 1.02f
+                ball.vx -= (1 + bounce) * relativeSpeed * nx
+                ball.vy -= (1 + bounce) * relativeSpeed * ny
+            }
+            ball.y = boundaryY + ball.radius
         }
     }
 
